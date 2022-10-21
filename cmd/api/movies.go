@@ -9,6 +9,7 @@ import (
 	"github.com/canyolal/greenlight/internal/data"
 )
 
+// createMovieHandler() supports POST HTTP method for creating movies to DB.
 func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
@@ -26,6 +27,7 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 	fmt.Fprintf(w, "%+v\n", input)
 }
 
+// showMovieHandler() supports GET HTTP method for showing a single movie resource.
 func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := app.readIDParam(r)
