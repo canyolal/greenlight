@@ -86,7 +86,7 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 			if unmarshalTypeError.Field != "" {
 				return fmt.Errorf("body contains incorrect JSON type for field %q", unmarshalTypeError.Field)
 			}
-			return fmt.Errorf("body contains incorrect JSON type (at character%d)", unmarshalTypeError.Offset)
+			return fmt.Errorf("body contains incorrect JSON type (at character %d)", unmarshalTypeError.Offset)
 
 		// A json.InvalidUnmarshalError error will be returned if we pass a non-nil
 		// pointer to Decode(). We catch this and panic, rather than returning an error
