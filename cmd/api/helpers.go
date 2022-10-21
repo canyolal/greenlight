@@ -102,3 +102,7 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 	}
 	return nil
 }
+
+func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.errorResponse(w, r, http.StatusBadRequest, err.Error())
+}
