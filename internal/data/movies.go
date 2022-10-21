@@ -2,7 +2,7 @@ package data
 
 import "time"
 
-type Movies struct {
+type Movie struct {
 	Id        int64
 	CreatedAt time.Time
 	Title     string
