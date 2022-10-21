@@ -9,6 +9,9 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// envelope type to nest json under struct name
+type envelope map[string]interface{}
+
 // ReadIDParam() reads :id from http request parameters.
 func (app *application) readIDParam(r *http.Request) (int64, error) {
 	params := httprouter.ParamsFromContext(r.Context())
@@ -23,7 +26,7 @@ func (app *application) readIDParam(r *http.Request) (int64, error) {
 
 // writeJSON() is a helper for sending JSON responses. Receives http.ResponseWriter,
 // HTTP status code, HTTP headers and data to be sent as JSON.
-func (app *application) writeJSON(w http.ResponseWriter, status int, data interface{}, headers http.Header) error {
+func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope, headers http.Header) error {
 
 	js, err := json.Marshal(data)
 	if err != nil {
