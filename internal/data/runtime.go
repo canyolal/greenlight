@@ -10,7 +10,7 @@ type Runtime int32
 
 // MarshalJSON() method for runtime type which satisfies Marshaler interface so that
 // runtime can return in "r mins" format in JSON.
-func (r *Runtime) MarshalJSON() ([]byte, error) {
+func (r Runtime) MarshalJSON() ([]byte, error) {
 	jsonVal := fmt.Sprintf("%d mins", r)
 
 	// Use the strconv.Quote() function on the string to wrap it in double quotes. It
