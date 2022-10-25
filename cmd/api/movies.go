@@ -131,6 +131,7 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 		movie.Runtime = *input.Runtime
 	}
 	// Note that we don't need to dereference a slice.
+	// Because slices have already zero-value of nil.
 	if input.Genres != nil {
 		movie.Genres = input.Genres
 	}
@@ -144,7 +145,12 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 
 	err = app.models.Movies.Update(movie)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
 
