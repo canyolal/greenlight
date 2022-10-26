@@ -208,7 +208,14 @@ func (app *application) listMovieHandler(w http.ResponseWriter, r *http.Request)
 
 	input.Filters.Sort = app.readString(qs, "sort", "id")
 
-	if !v.Valid() {
+	// Allowed sort options.
+	input.Filters.SortSafeList = []string{
+		"id", "title", "year", "runtime",
+		"-id", "-title", "-year", "-runtime",
+	}
+
+	// Validate filter entries.
+	if data.ValidateFilters(v, &input.Filters); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
