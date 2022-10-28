@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	"golang.org/x/time/rate"
 )
@@ -31,11 +32,34 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 }
 
 func (app *application) rateLimit(next http.Handler) http.Handler {
+
+	type client struct {
+		limiter  *rate.Limiter
+		lastSeen time.Time
+	}
+
 	// Declare a mutex and a map to hold the clients' IP addresses and rate limiters.
 	var (
 		mu      sync.Mutex
-		clients = make(map[string]*rate.Limiter)
+		clients = make(map[string]*client)
 	)
+
+	// Launch a background goroutine which removes old entries from the clients map once
+	// every minute.
+	go func() {
+		for {
+			time.Sleep(time.Minute)
+
+			mu.Lock()
+
+			for ip, client := range clients {
+				if time.Since(client.lastSeen) > 3*time.Minute {
+					delete(clients, ip)
+				}
+			}
+			mu.Unlock()
+		}
+	}()
 
 	// ANY CODE BEFORE RETURN IN A MIDDLEWARE ONLY RUNS ONCE. BUT INSIDE return STMT WILL
 	// RUN FOR EVERY MIDDLEWARE HANDLING. SO WE CREATE A LIMITER ONLY ONCE AND ALL.
@@ -54,10 +78,14 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 		mu.Lock()
 
 		if _, found := clients[ip]; !found {
-			clients[ip] = rate.NewLimiter(2, 4)
+			clients[ip] = &client{
+				limiter: rate.NewLimiter(2, 4),
+			}
 		}
 
-		if !clients[ip].Allow() {
+		clients[ip].lastSeen = time.Now()
+
+		if !clients[ip].limiter.Allow() {
 			mu.Unlock()
 			app.rateLimitExceedResponse(w, r)
 			return
