@@ -60,7 +60,7 @@ func (p *password) Matches(plaintextPassword string) (bool, error) {
 	if err != nil {
 		switch {
 		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
-			return false, bcrypt.ErrMismatchedHashAndPassword
+			return false, nil
 		default:
 			return false, err
 		}
@@ -96,7 +96,7 @@ func ValidateUser(v *validator.Validator, user *User) {
 	// useful sanity check to include here, but it's not a problem with the data
 	// provided by the client. So rather than adding an error to the validation map we
 	// raise a panic instead.
-	if user.Password.hash != nil {
+	if user.Password.hash == nil {
 		panic("missing password hash for user")
 	}
 }
@@ -116,7 +116,7 @@ func (m *UserModel) Insert(user *User) error {
 	// to perform the insert there will be a violation of the UNIQUE "users_email_key"
 	// constraint that we set up in the previous chapter. We check for this error
 	// specifically, and return custom ErrDuplicateEmail error instead.
-	err := m.DB.QueryRowContext(ctx, query, args).Scan(&user.Id, &user.CreatedAt, &user.Version)
+	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.Id, &user.CreatedAt, &user.Version)
 	if err != nil {
 		switch {
 		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
