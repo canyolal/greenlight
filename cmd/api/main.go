@@ -78,8 +78,6 @@ func main() {
 	if err != nil {
 		logger.PrintFatal(err, nil)
 	}
-
-	logger.PrintFatal(err, nil)
 }
 
 // openDB() returns a sql.DB connection pool.
