@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"sync"
 
 	"golang.org/x/time/rate"
 )
@@ -29,9 +31,11 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 }
 
 func (app *application) rateLimit(next http.Handler) http.Handler {
-	// Initialize a new rate limiter which allows an average of 2 requests per second,
-	// with a maximum of 4 requests in a single ‘burst’.
-	limiter := rate.NewLimiter(2, 4)
+	// Declare a mutex and a map to hold the clients' IP addresses and rate limiters.
+	var (
+		mu      sync.Mutex
+		clients = make(map[string]*rate.Limiter)
+	)
 
 	// ANY CODE BEFORE RETURN IN A MIDDLEWARE ONLY RUNS ONCE. BUT INSIDE return STMT WILL
 	// RUN FOR EVERY MIDDLEWARE HANDLING. SO WE CREATE A LIMITER ONLY ONCE AND ALL.
@@ -39,13 +43,32 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 	// The function we are returning is a closure, which 'closes over' the limiter
 	// variable.
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Call limiter.Allow() to see if the request is permitted, and if it's not,
-		// then we call the rateLimitExceededResponse() helper to return a 429 Too Many
-		// Requests response (we will create this helper in a minute).
-		if !limiter.Allow() {
+		// Extract the client's IP address from the request.
+		ip, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		// Lock the mutex to prevent this code from being executed concurrently.
+		mu.Lock()
+
+		if _, found := clients[ip]; !found {
+			clients[ip] = rate.NewLimiter(2, 4)
+		}
+
+		if !clients[ip].Allow() {
+			mu.Unlock()
 			app.rateLimitExceedResponse(w, r)
 			return
 		}
+
+		// Very importantly, unlock the mutex before calling the next handler in the
+		// chain. Notice that we DON'T use defer to unlock the mutex, as that would mean
+		// that the mutex isn't unlocked until all the handlers downstream of this
+		// middleware have also returned.
+		mu.Unlock()
+
 		next.ServeHTTP(w, r)
 	})
 }
