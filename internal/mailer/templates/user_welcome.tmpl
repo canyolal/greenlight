@@ -1,0 +1,31 @@
+{{define "subject"}} Welcome to Greenlight{{end}}
+
+{{define "plainBody"}}
+Hi, 
+
+Thanks for signing up.
+
+Your Id number is {{.Id}}
+
+Thanks,
+Greenlight Team
+{{end}}
+
+{{define "htmlBody"}}
+<!doctype html>
+
+<html>
+    <head>
+        <meta name = "viewport" content = "width-device-width" />
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    </head>
+    
+    <body>
+        <p>Hi,</p>
+        <p>Thanks for signing up.</p>
+        <p>Your Id number is {{.Id}}</p>
+        <p>Thanks,</p>
+        <p>Greenlight Team</p>
+    </body>
+</html>
+{{end}}
