@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"time"
@@ -19,7 +20,7 @@ var (
 // any output when we encode it to JSON. Also notice that the Password field uses the
 // custom password type defined below.
 type User struct {
-	Id        int       `json:"id"`
+	Id        int64     `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
@@ -170,7 +171,7 @@ func (m *UserModel) Update(user *User) error {
 	defer cancel()
 
 	args := []interface{}{&user.Name, &user.Email, &user.Password.hash, &user.Activated, &user.Id, &user.Version}
-	err := m.DB.QueryRowContext(ctx, query, args).Scan(&user.Version)
+	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.Version)
 	if err != nil {
 		switch {
 		case err.Error() == `pq: duplicate key value violates unique constraint "user_email_key"`:
@@ -182,4 +183,45 @@ func (m *UserModel) Update(user *User) error {
 		}
 	}
 	return nil
+}
+
+func (m *UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error) {
+
+	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
+
+	query := `
+		SELECT users.id, users.created_at, users.name, users.email, users.password_hash, users.activated, users.version 
+		FROM users
+		INNER JOIN tokens
+		ON users.id = tokens.user_id
+		WHERE tokens.hash = $1
+		AND tokens.scope = $2
+		AND tokens.expiry > $3`
+
+	args := []interface{}{tokenHash[:], tokenScope, time.Now()}
+
+	var user User
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, args...).Scan(
+		&user.Id,
+		&user.CreatedAt,
+		&user.Name,
+		&user.Email,
+		&user.Password.hash,
+		&user.Activated,
+		&user.Version,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+
+	}
+	return &user, nil
 }
