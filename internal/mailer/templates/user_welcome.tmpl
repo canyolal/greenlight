@@ -7,6 +7,10 @@ Thanks for signing up.
 
 Your Id number is {{.Id}}
 
+Please send a request to `PUT /v1/users/activated` endpoint with the following JSON body to activate your account.
+
+{"token" : "{{.activationToken}}"}
+
 Thanks,
 Greenlight Team
 {{end}}
@@ -24,6 +28,11 @@ Greenlight Team
         <p>Hi,</p>
         <p>Thanks for signing up.</p>
         <p>Your Id number is {{.Id}}</p>
+            <p> Please send a request to <code>PUT /v1/users/activated</code> endpoint with the following JSON body to activate your account:
+            </p>
+        <pre><code>
+        {"token" : "{{.activationToken}}"}
+        </code></pre>
         <p>Thanks,</p>
         <p>Greenlight Team</p>
     </body>

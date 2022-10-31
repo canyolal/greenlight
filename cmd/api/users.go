@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/canyolal/greenlight/internal/data"
 	"github.com/canyolal/greenlight/internal/validator"
@@ -53,9 +54,21 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	token, err := app.models.Tokens.New(int64(user.Id), 3*24*time.Hour, data.ScopeActivation)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
 	// Use background helper to execute an anon function that sends email.
 	app.background(func() {
-		err = app.mailer.Send(user.Email, "user_welcome.tmpl", user)
+
+		data := map[string]interface{}{
+			"activationToken": token.Plaintext,
+			"userID":          token.UserID,
+		}
+
+		err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
 		if err != nil {
 			app.logger.PrintError(err, nil)
 		}
