@@ -87,7 +87,7 @@ func (app *application) invalidAuthenticationTokenResponse(w http.ResponseWriter
 	app.errorResponse(w, r, http.StatusUnauthorized, message)
 }
 
-// Returns error is not authenticated for particular resource
+// Returns error is not authenticated for particular resource/
 func (app *application) authenticationRequiredResponse(w http.ResponseWriter, r *http.Request) {
 	message := "you must be authenticated to access this resource"
 	app.errorResponse(w, r, http.StatusUnauthorized, message)
@@ -96,5 +96,11 @@ func (app *application) authenticationRequiredResponse(w http.ResponseWriter, r 
 // Returns error message if user is not activated.
 func (app *application) inactiveAccountResponse(w http.ResponseWriter, r *http.Request) {
 	message := "your user account must be activated to access this resource"
+	app.errorResponse(w, r, http.StatusForbidden, message)
+}
+
+// Returns error for users do not have permission to access a resource.
+func (app *application) notPermittedResponse(w http.ResponseWriter, r *http.Request) {
+	message := "your user account doesn't have permission to access this resource"
 	app.errorResponse(w, r, http.StatusForbidden, message)
 }
