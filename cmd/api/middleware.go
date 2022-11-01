@@ -108,6 +108,7 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 	})
 }
 
+// Authenticates user before passing to handlers.
 func (app *application) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -121,7 +122,7 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		authorizationHeader := r.Header.Get("Authorization")
 
 		// If there is no Authorization header found, use the contextSetUser() helper
-		// that we just made to add the AnonymousUser to the request context. Then we
+		// that we ust made to add the AnonymousUser to the request context. Then we
 		// call the next handler in the chain and return without executing any of the
 		// code below.
 		if authorizationHeader == "" {
@@ -173,6 +174,35 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		// Call the contextSetUser() helper to add the user info. to the request context.
 		r = app.contextSetUser(r, user)
 
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) requireActivatedUser(next http.HandlerFunc) http.HandlerFunc {
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		user := app.contextGetUser(r)
+
+		if !user.Activated {
+			app.inactiveAccountResponse(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+
+	return app.requireAuthenticatedUser(fn)
+}
+
+func (app *application) requireAuthenticatedUser(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		user := app.contextGetUser(r)
+
+		if user.IsAnonymous() {
+			app.authenticationRequiredResponse(w, r)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
