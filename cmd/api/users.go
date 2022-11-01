@@ -17,6 +17,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		Password string `json:"password"`
 	}
 
+	// Read Json input
 	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
@@ -29,6 +30,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		Activated: false,
 	}
 
+	// Convert plaintext password to hashed
 	err = user.Password.Set(input.Password)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
@@ -42,6 +44,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Insert user into users table
 	err = app.models.Users.Insert(user)
 	if err != nil {
 		switch {
@@ -54,13 +57,21 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Add user permissions to users_permissions table
+	err = app.models.Permissions.AddForUser(user.Id, "movies:read")
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	// Create a new activation token for newly created user
 	token, err := app.models.Tokens.New(int64(user.Id), 3*24*time.Hour, data.ScopeActivation)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	// Use background helper to execute an anon function that sends email.
+	// Use background helper to execute an anon function that sends activation email.
 	app.background(func() {
 
 		data := map[string]interface{}{
