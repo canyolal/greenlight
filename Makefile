@@ -58,9 +58,13 @@ vendor:
 ## BUILD ##
 ## ---- ##
 
+current_time = $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+git_description = $(shell git describe --always --dirty)
+linker_flags = '-s -w -X main.buildTime=${current_time} -X main.version=${git_description}'
+
 # -s and -w for omitting DWARF table to reduce binary size
 .PHONY: build/api
 build/api:
 	@echo 'Building cmd/api'
-	go build -ldflags='-s -w' -o=./bin/api ./cmd/api
-	GOOS=linux GOARCH=amd64 go build -ldflags='-s -w' -o=./bin/linux_amd64/api ./cmd/api
+	go build -ldflags=${linker_flags} -o=./bin/api ./cmd/api
+	GOOS=linux GOARCH=amd64 go build -ldflags=${linker_flags} -o=./bin/linux_amd64/api ./cmd/api
