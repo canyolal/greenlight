@@ -1,3 +1,4 @@
+include .envrc
 ## ---- ##
 ## HELPERS ##
 ## ---- ##
@@ -17,7 +18,7 @@ confirm:
 
 .PHONY: run/api
 run/api:
-	@go run ./cmd/api
+	@go run ./cmd/api -db-dsn=${GREENLIGHT_DB_DSN}
 
 .PHONY: db/psql
 db/psql:
@@ -52,3 +53,14 @@ vendor:
 	go mod verify
 	@echo 'Vendoring dependencies...'
 	go mod vendor
+
+## ---- ##
+## BUILD ##
+## ---- ##
+
+# -s and -w for omitting DWARF table to reduce binary size
+.PHONY: build/api
+build/api:
+	@echo 'Building cmd/api'
+	go build -ldflags='-s -w' -o=./bin/api ./cmd/api
+	GOOS=linux GOARCH=amd64 go build -ldflags='-s -w' -o=./bin/linux_amd64/api ./cmd/api
