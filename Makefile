@@ -18,7 +18,7 @@ confirm:
 
 .PHONY: run/api
 run/api:
-	@go run ./cmd/api -db-dsn=${GREENLIGHT_DB_DSN}
+	@go run ./cmd/api -db-dsn=${GREENLIGHT_DB_DSN} -smtp-username=${SMTP_username} -smtp-password=${SMTP_password}
 
 .PHONY: db/psql
 db/psql:
