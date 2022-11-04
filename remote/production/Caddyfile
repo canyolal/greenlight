@@ -1,0 +1,8 @@
+{
+	email canyolal16@gmail.com
+}
+
+http://68.183.67.92 {
+	respond /v1/metrics "Not Permitted" 403
+	reverse_proxy localhost:4000
+}
